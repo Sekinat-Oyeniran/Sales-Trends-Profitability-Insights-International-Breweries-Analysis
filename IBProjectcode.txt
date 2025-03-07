@@ -1,0 +1,424 @@
+                           -- Analyzing data with visuals --
+/* From the international breweries data recorded for a duration of three years, you are directed 
+to do the following analyses to aid better decision making in order to maximize profit and reduce 
+loss to the lowest minimum */
+
+                                -- SECTION A --
+								-- PROFIT ANALYSIS--
+/* Within the space of the last three years, what was the profit worth of the breweries, inclusive
+of the anglophone and the francophone territories */
+
+/* Exploring the dataset, Anglophone countries are Nigeria and Ghana, while Francophone countries 
+are Benin, Senegal, and Togo. */
+
+SELECT *
+FROM breweries;
+
+SELECT DISTINCT years
+FROM breweries;
+
+SELECT SUM(profit) AS total_profit
+FROM breweries;
+
+-- The profit worth of the breweries in the last three years is N105,587,420
+
+/* Compare the total profit between these two territories in order for the territory manager,
+Mr. Stone made a strategic decision that will aid profit maximization in 2020.*/
+
+SELECT
+	territory, 
+	SUM(sum_of_profit) as total_profit
+FROM 
+	(SELECT countries, SUM(profit) as sum_of_profit,
+CASE 
+	 WHEN countries IN ('Nigeria', 'Ghana') THEN 'Anglophone'
+	 WHEN countries IN ('Benin', 'Senegal', 'Togo') THEN 'Francophone'
+	 ELSE 'No territory'
+END AS territory
+FROM breweries 				
+GROUP BY 1
+ORDER BY 2 DESC) AS tp
+GROUP BY 1
+ORDER BY 2 ASC;
+
+SELECT SUM(profit) AS total_profit
+FROM breweries
+
+
+-- Calculate the percentage profit --
+
+SELECT 
+	territory, 
+	SUM(sum_of_profit) as total_profit, 
+	ROUND(SUM(sum_of_profit) * 100.0 /(SELECT SUM(profit) FROM breweries),2) as percentage_profit
+FROM
+	(SELECT countries, SUM(profit) as sum_of_profit,
+CASE 
+	 WHEN countries IN ('Nigeria', 'Ghana') THEN 'Anglophone'
+	 WHEN countries IN ('Benin', 'Senegal', 'Togo') THEN 'Francophone'
+	 ELSE 'No territory'
+END AS territory
+FROM breweries 				
+GROUP BY 1
+ORDER BY 2 DESC) AS tp
+GROUP BY 1
+ORDER BY 2 ASC;
+
+-- The Francophone countries generated higher profit than the Anglophone countries --
+
+-- Country that generated the highest profit in 2019 --
+
+SELECT 
+	countries,
+	SUM (profit) as total_profit_generated
+FROM 
+	breweries
+WHERE years = 2019
+GROUP BY 1
+ORDER BY 2 DESC
+LIMIT 1;
+
+-- The country that generated the highest profit in 2019 is Ghana --
+
+-- Help him find the year with the highest profit -- 
+
+SELECT 
+	years, 
+	SUM(profit) as highest_profit_generated
+FROM 
+	breweries
+GROUP BY 1
+ORDER BY 2 DESC
+LIMIT 1;
+
+-- The highest profit was generated in 2017 --
+
+-- Which month in the three years was the least profit generated? --
+
+SELECT 
+	months, years, 
+	SUM (profit) as least_profit
+FROM 
+	breweries
+GROUP BY 1,2
+ORDER BY 3 ASC
+LIMIT 1;
+
+-- The least profit (1,366,880) was generated in February 2019 --
+ 
+-- What was the minimum profit in the month of December 2018? --
+
+SELECT 
+	months,
+	MIN(profit) AS minimum_profit
+FROM 
+	breweries
+WHERE months = 'December'
+AND years = 2018 
+GROUP BY 1
+ORDER BY 1;
+
+
+-- compare the profit in percentage for each months in 2019 --
+
+SELECT SUM(profit) AS total_profit
+FROM breweries 
+WHERE years = 2019;
+
+SELECT 	
+	months,
+	ROUND(
+	SUM(profit) * 100.0/(SELECT SUM(profit)
+FROM 
+	breweries 
+WHERE years = 2019 ),
+		2) AS  percentage_change
+FROM breweries 
+WHERE years = 2019 
+GROUP BY 1
+ORDER BY 2 DESC;
+
+-- compare the profit in percentage for each year -- 
+
+SELECT 	
+	years,
+	SUM(profit),
+	ROUND(
+		SUM(profit) * 100.0/(SELECT SUM(profit)
+FROM
+	breweries 
+),
+2) AS yearly_percentage_change
+FROM breweries 
+GROUP BY 1
+ORDER BY 2 DESC;
+
+
+-- Which particular brand generated the highest profit in Senegal? -- 
+
+SELECT 
+	brands, 
+	SUM(profit) as highest_profit_generated
+FROM
+	breweries 
+WHERE countries = 'Senegal'
+GROUP BY 1 
+ORDER BY 2 DESC
+LIMIT 1;
+
+-- The brand that generated the highest profit in Senegal is Castle lite (7,012,980) -- 
+
+								-- SECTION B -- 
+								-- BRAND ANALYSIS -- 
+/* Within the last two years, the brand manager wants to know the top three brands consumed 
+in francophone countries */
+
+With top_three_brands as
+(SELECT brands, years, SUM(quantity) as quantity_sold, 
+row_number() OVER (Partition by years ORDER BY SUM(quantity) DESC) as top_brands
+FROM breweries 
+WHERE countries IN ('Benin', 'Senegal', 'Togo') 
+AND years IN (2017, 2018)
+GROUP BY 1,2 
+ORDER BY 3 DESC)
+
+SELECT brands, years, quantity_sold
+FROM top_three_brands
+WHERE top_brands <= 3
+ORDER BY years;
+
+
+-- Find out the top choice of consumer brands in Ghana -- 
+
+SELECT 
+	brands, 
+	countries,
+	SUM(quantity) as quantity_consumed
+FROM
+	breweries 
+WHERE countries = 'Ghana'
+GROUP BY 1,2 
+ORDER BY 3 DESC 
+LIMIT 1; 
+
+-- The top choice of consumer brands in Ghana is eagle lager --
+
+/* Find out the details of beers consumed in the past three years in the most oil-rich countries in West Africa. */
+
+SELECT
+	brands, 
+	SUM(quantity_consumed) as total_quantity_consumed
+FROM
+	(SELECT brands, countries, SUM(quantity) as quantity_consumed
+FROM breweries 
+WHERE brands IN ('castle lite', 'budweiser', 'eagle lager', 'hero', 'trophy')
+AND countries IN ('Nigeria', 'Ghana')
+GROUP BY 1,2
+ORDER BY 3 DESC) aa
+GROUP BY brands
+ORDER BY total_quantity_consumed DESC;
+
+
+-- Favorites malt brand in Anglophone region between 2018 and 2019 --
+
+SELECT 
+	brands, 
+	SUM(quantity) as total_quantity_sold
+FROM 
+	breweries 
+WHERE brands LIKE '%malt'
+AND countries IN ('Nigeria', 'Ghana') 
+AND years IN (2018, 2019) 
+GROUP BY 1
+ORDER BY 2 DESC;
+
+-- Which brands sold the highest in 2019 in Nigeria? --
+
+SELECT 
+	brands, 
+	SUM(quantity) as total_quantity_sold
+FROM 
+	breweries 
+WHERE countries = 'Nigeria' 
+AND years = 2019
+GROUP BY 1 
+ORDER BY 2 DESC
+LIMIT 1;
+
+--Favourite brands in south_south region in Nigeria --
+
+SELECT 
+	brands, 
+	SUM(quantity) as total_quantity_sold
+FROM 
+	breweries 
+WHERE countries = 'Nigeria' 
+AND region = 'southsouth' 
+GROUP BY 1
+ORDER BY 2 DESC;
+
+-- Beer consumption in Nigeria --
+
+SELECT
+	brands, 
+	SUM(quantity) as total_quantity_consumed
+FROM 
+	breweries 
+WHERE countries = 'Nigeria'
+GROUP BY 1 
+ORDER BY 2 ASC;
+
+-- Level of consumption of Budweiser in the regions in Nigeria -- 
+
+SELECT 
+	region, 
+	SUM(quantity) as total_quantity_sold
+FROM 
+	breweries 
+WHERE brands = 'budweiser'
+AND countries = 'Nigeria'
+GROUP BY 1 
+ORDER BY 2 ASC; 
+
+
+-- Level of consumption of Budweiser in the regions in Nigeria in 2019 (Decision on Promo) -- 
+
+SELECT 
+	region, 
+	SUM (quantity) as total_quantity_sold
+FROM 
+	breweries 
+WHERE brands = 'budweiser'
+AND countries = 'Nigeria'
+AND years = 2019
+GROUP BY 1 
+ORDER BY 2 ASC; 
+
+-- There was no sale in north central in 2019 --
+
+
+								-- SECTION C --
+								-- COUNTRIES ANALYSIS --
+								
+--Country with the highest consumption of beer --
+
+SELECT 
+	countries, 
+	SUM(quantity_consumed) as total_quantity_consumed
+FROM 
+	(SELECT brands, countries, SUM(quantity) as quantity_consumed
+FROM breweries 
+WHERE brands IN ('castle lite', 'budweiser', 'eagle lager', 'hero', 'trophy')
+GROUP BY 1, 2 
+ORDER BY 2 DESC) AS qc
+GROUP BY 1 
+ORDER BY 2 DESC
+LIMIT 1;
+
+--Country with the highest consumption of beer is Senegal --
+
+
+--Highest sales personnel of Budweiser in Senegal --
+
+SELECT 
+	sales_rep, 
+	SUM(quantity) as total_quantity_sold 
+FROM 
+	breweries 
+WHERE brands = 'budweiser' 
+AND countries = 'Senegal'
+GROUP BY 1 
+ORDER BY 2  DESC
+LIMIT 1;
+
+-- The highest sales personnel of Budweiser in Senegal is Jones -- 
+
+-- Country with the highest profit of the fourth quarter in 2019 -- 
+
+SELECT 
+	countries, 
+	SUM(profit) as total_quantity_sold
+FROM 
+	breweries 
+WHERE months IN ('October', 'November', 'December')
+AND years = 2019
+GROUP BY 1 
+ORDER BY 2  DESC
+LIMIT 1; 
+
+-- The country with the highest profit of the fourth quarter in 2019 is Ghana --
+
+SELECT sales_rep, SUM(costs) AS total_costs 
+FROM breweries
+GROUP BY 1
+ORDER BY 2 DESC;
+
+SELECT countries, SUM(quantity) AS total_quantity
+FROM breweries
+GROUP BY 1
+ORDER BY 2 DESC;
+
+SELECT brands, years, SUM(profit) AS total_profitr
+FROM breweries
+GROUP BY 1, 2
+ORDER BY 3 DESC;
+
+SELECT brands, SUM(costs) AS total_costs
+FROM breweries
+GROUP BY 1
+ORDER BY 2 DESC;
+
+SELECT region, countries, SUM(profit) AS total_profit
+FROM breweries
+GROUP BY 1,2
+ORDER BY 2 DESC;
+
+SELECT region, countries, SUM(quantity) as total_quantity
+FROM breweries
+GROUP BY 1, 2
+ORDER BY 2 DESC
+--LIMIT 1 
+
+-- Brands that generated the least amount of profit --
+
+SELECT brands, SUM(quantity) AS total_quantity
+FROM breweries 
+WHERE years = 2019 
+AND countries = 'Togo'
+GROUP BY 1
+ORDER BY 2 DESC;
+
+
+SELECT countries , SUM(profit) AS total_profit
+FROM breweries 
+--WHERE countries = 'Togo'
+GROUP BY 1
+ORDER BY 2 DESC;
+
+--INSIGHT--
+/*
+The profit worth of the breweries in the last three years is N105,587,420.00
+The Francophone countries generated more profit than the Anglophone countries by 19.70%. 
+The highest profit was generated in 2017, with 36.47%, this decreases to 35.10% in 2018, 
+and further decreases to 28.43% in 2019.
+The top three brands that generated the highest profit are castle lite, budweiser, and eagle lager. and are beer
+The least selling brands that generated the lowest profit are trophy, hero, and grand malt.
+In 2019, hero and grand malt were highest selling brands while the highest selling brands (castle lite and budweiser) 
+had the least quantity sold. This may be responsible for the loss.
+Additionally, sale increases during dry season (December - March), which leads to the high profit 
+generated during this season and vice versa. Sales gradually decreases during rainy season (April - October).
+Senegal generated the highest profit of #21 million (20.35%), followed closely by Nigeria with #21 million (20.25%), 
+Ghana with #21 million (19.9%), and Benin with #21 million (19.85%). Togo recorded the lowest profit. 
+This may be attributed to the fact that Togo's highest-selling brand, Grand Malt, is among the least popular brands overall."
+Sales vary from region to region based on brand's consumption and demand in each country. 
+The top three regions that generated the highest profits are southsouth, west, and northcentral and the 
+regions that generated the least profits are northeast, southeast, and northwest
+*/
+
+-- Recommendation --
+-- Invest in top selling brands,
+-- Benin and Togo are the least performing countries in sales. The company should create market awareness
+-- of popular products in these countries.
+-- The top performing countries in sales Senegal, Nigeria, and Ghana, they should promopte sale of malts in these
+countries --
+
