@@ -1,0 +1,114 @@
+INSTRUCTIONS
+
+-- Import your data from Excel into SQL
+-- Solve the questions below 
+-- Prepare a power point with the appropriate visualizations for questions that can be visualized. 
+
+
+-- Questions
+-- Write an SQL query to fetch 'SALES_REP' from breweries table using the alias name as WORKER_NAME -- 
+
+SELECT *
+FROM breweries;
+
+SELECT sales_rep AS WORKER_NAME
+FROM breweries; 
+
+
+-- Write an SQL query to fetch 'BRANDS'from breweries table in upper case -- 
+
+SELECT UPPER (brands) 
+FROM breweries;  
+
+/*
+Write an SQL query to print all details from the breweries table; sort the QUANTITY
+column in Ascending order and the COSTS column in Descending order
+*/
+
+SELECT *
+FROM breweries
+ORDER BY quantity ASC, costs DESC;
+
+/* Write an SQL query to print the profit made from two brands "trophy" and "eagle" 
+in the first quarter of 2019 */
+
+SELECT brands, profit
+FROM breweries 
+WHERE brands IN ('trophy', 'eagle lager')
+AND months IN ('January', 'February', 'March')
+AND years = 2019;
+
+-- Write a query that reduces the cost of the trophy brand by 2% --
+
+SELECT brands, COSTS - (COSTS * 2 /100) AS discount
+FROM breweries
+WHERE brands = 'trophy'
+
+-- Which sales_rep made the highest profit in Ghana in the year 2017 -- 
+
+SELECT sales_rep, SUM(profit) AS total_profit
+FROM breweries 
+WHERE countries = 'Ghana' 
+AND years = 2017
+GROUP BY 1 
+ORDER BY 2 DESC
+LIMIT 1;
+
+-- What region recorded the lowest quantity of goods in the last quarter of every year --
+
+SELECT region, SUM(quantity) AS total_quantity
+FROM breweries
+WHERE months IN ('October', 'November', 'December') 
+GROUP BY 1 
+ORDER BY 2 ASC;
+
+
+/* The breweries company has a yearly tradition of promoting the sales_rep who
+makes the highest profit in the year. Who deserves this promotion in 2019 */
+
+SELECT sales_rep, SUM(profit) AS total_profit
+FROM breweries 
+WHERE years = 2019 
+GROUP BY 1 
+ORDER BY 2 DESC
+LIMIT 1;
+
+/* Regions with quantities of trophy which are less than 60000, need to be restocked.
+What regions do we restock with the trophy brand?*/  
+
+SELECT region, quantity, countries
+FROM breweries 
+WHERE quantity < 60000 
+AND brands = 'trophy';
+
+-- Visualization --
+
+SELECT sales_rep, SUM(costs) AS total_costs
+FROM breweries
+GROUP BY 1
+ORDER BY 2 DESC;
+
+SELECT countries, SUM(quantity) AS total_quantity
+FROM breweries
+GROUP BY 1
+ORDER BY 2 DESC;
+
+SELECT brands, years, SUM(profit) AS total_profit
+FROM breweries
+GROUP BY 1, 2
+ORDER BY 3 DESC;
+
+SELECT brands, SUM(costs) AS total_costs
+FROM breweries
+GROUP BY 1
+ORDER BY 2 DESC;
+
+SELECT region, countries, SUM(profit) AS total_profit
+FROM breweries
+GROUP BY 1,2
+ORDER BY 2 DESC;
+
+SELECT years, SUM(profit) AS total_profit
+FROM breweries
+GROUP BY 1
+ORDER BY 2 DESC;
